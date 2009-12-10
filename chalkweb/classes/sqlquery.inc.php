@@ -23,6 +23,15 @@ define( "dtInteger", 2 );
 define( "dtTimestamp", 3 );
 define( "dtIdentifier", 10 );
 
+function paramlengthsort( $a, $b ) {
+	$k = strlen($a);
+	$l = strlen($b);
+	if ( $k == $l ) {
+		return 0;
+	}
+	return ($k > $l) ? -1 : 1;
+}
+
 class CSQLQuery {
 	protected $currentQuery = "";
 	protected $resolvedQuery = "";
@@ -34,6 +43,9 @@ class CSQLQuery {
 
 	protected function resolveParams() {
 		$this->resolvedQuery = "" . $this->currentQuery;
+
+		uksort( $this->parameters, "paramlengthsort" );
+
 		foreach ( $this->parameters as $param => $value ) {
 			$iType = $value[0];
 			$aValue = $value[1];
