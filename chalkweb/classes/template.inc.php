@@ -38,7 +38,9 @@ class CTemplate {
 
 	//-----------------------------------------------------
 	protected function retreiveContents() {
-		$this->templateContents = file_get_contents( $this->templatefile );
+		if ( $this->templatefile != "" ) {
+			$this->templateContents = file_get_contents( $this->templatefile );
+		}
 	}
 
 	protected function resolveValueVars() {
@@ -202,6 +204,7 @@ class CTemplate {
 	public function __construct( $file ) {
 		$this->templatefile = $file;
 		$this->subtitle = "";
+		$this->templateContents = "";
 	}
 
 	public function AssignValue( $key, $value ) {
