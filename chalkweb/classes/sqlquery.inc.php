@@ -22,6 +22,7 @@ define( "dtString", 1 );
 define( "dtInteger", 2 );
 define( "dtTimestamp", 3 );
 define( "dtIdentifier", 10 );
+define( "dtRawEscaped", 11 );
 
 function paramlengthsort( $a, $b ) {
 	$k = strlen($a);
@@ -53,6 +54,8 @@ class CSQLQuery {
 
 			if ( $iType == dtRaw ) {
 				$this->resolvedQuery = str_replace( $sParam, $aValue, $this->resolvedQuery );
+			} else if ( $iType == dtRawEscaped ) {
+				$this->resolvedQuery = str_replace( $sParam, $this->db->Escape( $aValue ), $this->resolvedQuery );
 			} else if ( $iType == dtString ) {
 				$this->resolvedQuery = str_replace( $sParam, "'" . $this->db->Escape( $aValue ) . "'", $this->resolvedQuery );
 			} else if ( $iType == dtInteger ) {
