@@ -54,6 +54,36 @@ function GetGetVarAsInt( $varname, $default = -1 ) {
 	return $i;
 }
 
+function GetRawPostOrSession( $varname, $default = "" ) {
+	$val = $default;
 
+	if ( isset($_POST[$varname] ) ) {
+		$val = trim( GetRawPostVar($varname,$default) );
+		$_SESSION[$varname] = $val;
+	} else {
+		if ( isset($_SESSION[$varname]) ) {
+			$val = $_SESSION[$varname];
+		}
+	}
+
+	return $val;
+}
+
+function GetPostOrSessionAsInt( $varname, $default = -1 ) {
+	$i = $default;
+
+	if ( isset($_POST[$varname] ) ) {
+		$i = GetPostVarAsInt($varname,$default);
+		$_SESSION[$varname] = $i;
+	} else {
+		if ( isset($_SESSION[$varname]) ) {
+			if ( is_numeric($_SESSION[$varname]) ) {
+				$i = $_SESSION[$varname];
+			}
+		}
+	}
+
+	return $val;
+}
 
 ?>

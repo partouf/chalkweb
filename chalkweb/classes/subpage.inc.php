@@ -18,15 +18,52 @@
 include_once( "chalkweb/classes/template.inc.php" );
 
 class CSubPage extends CTemplate {
+	protected $itemCount = 0;
+	protected $itemsPerPage = 20;
+	protected $currentPage = 1;
+
+	protected function getPageCount() {
+		return floor($this->itemCount / $this->itemsPerPage);
+	}
+
+	protected function getItemPos() {
+		return (($this->currentPage - 1) * $this->itemsPerPage);
+	}
+
+	protected function hasNextPage() {
+		$c = $this->getPageCount();
+
+		return (($c >= 1) && ($this->currentPage <= $c));
+	}
+
+	protected function hasPreviousPage() {
+		return (($this->getPageCount() > 1) && ($this->currentPage > 1));
+	}
+
 	public function __construct( $file ) {
 		parent::__construct( $file );
 
+		$this->currentPage = GetGetVarAsInt("i", 1);
 	}
 
 	public function Prepare() {
+		// moved assigns to Process so you're not stuck to a mandatory order of calling parent::Prepare()
+	}
+
+	public function Process() {
 		global $globalCurrentUser;
 
 		$this->AssignCondition( "loggedin", ($globalCurrentUser != null) );
+
+		$this->AssignValue( "page_index", $this->currentPage );
+		$this->AssignValue( "page_count", $this->getPageCount() );
+
+		$this->AssignCondition( "page_hasnext", $this->hasNextPage() );
+		$this->AssignCondition( "page_hasprevious", $this->hasPreviousPage() );
+		$this->AssignValue( "page_previous", $this->currentPage - 1 );
+		$this->AssignValue( "page_next", $this->currentPage + 1 );
+
+		return parent::Process();
 	}
 }
 

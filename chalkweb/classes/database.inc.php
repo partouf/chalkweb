@@ -131,6 +131,20 @@ class CMySQLDB extends CDBConnection {
 			return mysql_error( $this->link );
 		}
 	}
+
+	public function startTransaction() {
+		$res = mysql_query( "start transaction;", $this->link );
+		if ( !$res ) {
+			$this->lastError = $this->GetLastError();
+
+			return false;
+		}
+		return true;
+	}
+	public function rollbackTransaction() {
+	}
+	public function commitTransaction() {
+	}
 }
 
 ?>
