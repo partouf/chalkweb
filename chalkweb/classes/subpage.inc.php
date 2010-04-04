@@ -40,6 +40,26 @@ class CSubPage extends CTemplate {
 		return (($this->getPageCount() > 1) && ($this->currentPage > 1));
 	}
 
+	protected function filterArray( $arr ) {
+	    $filteredArr = array ();
+        $this->itemCount = count($arr);
+
+	    $offset = ($this->currentPage - 1) * $this->itemsPerPage;
+	    $i = 0;
+        $c = $offset + $this->itemsPerPage;
+	    foreach ( $arr as $a => $b ) {
+	        if ( $i >= $offset ) {
+	            if ( $i == $c ) {
+	                break;
+	            }
+                $filteredArr[$a] = $b;
+	        }
+	        $i++;
+	    }
+
+	    return $filteredArr;
+	}
+
 	public function __construct( $file ) {
 		parent::__construct( $file );
 
