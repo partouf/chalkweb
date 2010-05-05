@@ -49,10 +49,12 @@ class CWebPage {
 		}
 	}
 
-	protected function loadPage( $page ) {
+	protected function loadPage( $page, $classname = "" ) {
 		include_once( "pages/" . $page . ".php" );
 
-		$classname = "C" . $page;
+		if ( $classname == "" ) { 
+			$classname = "C" . $page;
+		}
 		$this->contentTemplate = new $classname();
 	}
 
@@ -64,10 +66,11 @@ class CWebPage {
 		}
 
 		foreach ( $this->pages as $page ) {
-			if ( $page == $selectedPage ) {
-				$this->loadPage( $page );
+			if ( $page[0] == $selectedPage ) {
+				$classname = $page[1];
+				$this->loadPage( $page[0], $classname );
 
-				return $page;
+				return $page[0];
 			}
 		}
 
@@ -96,8 +99,8 @@ class CWebPage {
 		$this->title = $title;
 	}
 
-	public function AddPage( $name ) {
-		$this->pages[] = $name;
+	public function AddPage( $name, $classname = "" ) {
+		$this->pages[] = array ( $name, $classname );
 	}
 
 	public function OnPageLoaded( $pagename ) {
