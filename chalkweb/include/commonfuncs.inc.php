@@ -86,4 +86,23 @@ function GetPostOrSessionAsInt( $varname, $default = -1 ) {
 	return $val;
 }
 
+function HandleCallback1Arg( $callback, $arg ) {
+	if ( $callback ) {
+		if ( is_array($callback) ) {
+			$callbackobject = $callback[0];
+			$callbackfunction = $callback[1];
+			 
+			if ( $callbackobject ) {
+				return $callbackobject->$callbackfunction( $arg );
+			} else {
+				return $callbackfunction( $arg );
+			}
+		} else {
+			return $callback( $arg );
+		}
+	}
+	
+	return false;
+}
+
 ?>

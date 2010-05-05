@@ -34,8 +34,6 @@ class CTemplate {
 	protected $preVar = "%%";
 	protected $postVar = "%%";
 
-	protected $subtitle = "";
-
 	//-----------------------------------------------------
 	protected function retreiveContents() {
 		if ( $this->templatefile != "" ) {

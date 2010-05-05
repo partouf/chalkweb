@@ -21,7 +21,10 @@ class CSubPage extends CTemplate {
 	protected $itemCount = 0;
 	protected $itemsPerPage = 20;
 	protected $currentPage = 1;
+	protected $uploaddir = "/tmp/";
 
+	protected $subtitle = "";
+	
 	protected function getPageCount() {
 		return floor($this->itemCount / $this->itemsPerPage);
 	}
@@ -66,6 +69,53 @@ class CSubPage extends CTemplate {
 		$this->currentPage = GetGetVarAsInt("i", 1);
 	}
 
+	protected function includeTrailingSlash( $haystack ) {
+	   	if ($haystack[strlen($haystack) - 1] === '/') {
+			return $haystack;	   		
+	   	}
+	   	
+	   	return $haystack . "/";
+	}
+		
+	public function AllowUpload( $fieldname, $prefunc = false, $postfunc = false ) {
+		global $globalErrorHandler;
+
+		if ( !empty($_FILES[$fieldname]) ) {
+			if ( $_FILES[$fieldname]['error'] == UPLOAD_ERR_INI_SIZE ) {
+				$globalErrorHandler->Warning( "Filesize of '" . $filename . "' exceeds the maximum allowed filesize." );
+				return false;
+			}
+		}
+
+		$filename = $_FILES[$fieldname]['name'];
+		$tempname = $_FILES[$fieldname]['tmp_name'];
+		$targetfile = $this->includeTrailingSlash($this->uploaddir) . $filename;
+
+		if ( $prefunc ) {
+			if ( !HandleCallback1Arg( $prefunc, $_FILES[$fieldname] ) ) {
+				return false;
+			}
+		}
+
+		if ( !file_exists($targetfile) ) {
+			if ( !move_uploaded_file( $tempname, $targetfile ) ) {
+				$globalErrorHandler->Warning( "Something prevented us from saving your upload '" . $filename . "'." );
+			} else {
+				if ( $postfunc ) {
+					if ( !HandleCallback1Arg( $postfunc, $targetfile ) ) {
+						return false;
+					}
+				}
+
+				return $targetfile;
+			}
+		} else {
+			$globalErrorHandler->Warning( "File '" . $filename . "' already exists, please rename it before uploading." );
+		}
+
+		return false;
+	}
+	
 	public function Prepare() {
 		// moved assigns to Process so you're not stuck to a mandatory order of calling parent::Prepare()
 	}
@@ -82,6 +132,8 @@ class CSubPage extends CTemplate {
 		$this->AssignCondition( "page_hasprevious", $this->hasPreviousPage() );
 		$this->AssignValue( "page_previous", $this->currentPage - 1 );
 		$this->AssignValue( "page_next", $this->currentPage + 1 );
+		
+		$this->AssignValue( "subtitle", $this->subtitle );
 
 		return parent::Process();
 	}
