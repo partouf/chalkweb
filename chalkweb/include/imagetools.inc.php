@@ -52,11 +52,11 @@ function resizeImage( $filename, $newfilename, $sourcelocation, $destinationloca
 
 	$ext = strtolower( getExtension($filename) );
 	if($ext=='jpg' || $ext=='jpeg') {
-		return imagejpeg( $newimg, $destinationlocation . $filename );
+		return imagejpeg( $newimg, $destinationlocation . $newfilename );
 	} else if($ext=='gif') {
-		return imagegif( $newimg, $destinationlocation . $filename );
+		return imagegif( $newimg, $destinationlocation . $newfilename );
 	} else if($ext=='png') {
-		return imagepng( $newimg, $destinationlocation . $filename );
+		return imagepng( $newimg, $destinationlocation . $newfilename );
 	} else {
 		return false;
 	}
