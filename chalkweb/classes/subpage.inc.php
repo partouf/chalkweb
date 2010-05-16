@@ -80,39 +80,39 @@ class CSubPage extends CTemplate {
 	public function AllowUpload( $fieldname, $prefunc = false, $postfunc = false ) {
 		global $globalErrorHandler;
 
-		if ( !empty($_FILES[$fieldname]) ) {
+		if ( !empty($_FILES[$fieldname]) && !empty($_FILES[$fieldname]['name']) ) {
 			if ( $_FILES[$fieldname]['error'] == UPLOAD_ERR_INI_SIZE ) {
 				$globalErrorHandler->Warning( "Filesize of '" . $filename . "' exceeds the maximum allowed filesize." );
 				return false;
 			}
-		}
-
-		$filename = $_FILES[$fieldname]['name'];
-		$tempname = $_FILES[$fieldname]['tmp_name'];
-		$targetfile = $this->includeTrailingSlash($this->uploaddir) . $filename;
-
-		if ( $prefunc ) {
-			if ( !HandleCallback1Arg( $prefunc, $_FILES[$fieldname] ) ) {
-				return false;
-			}
-		}
-
-		if ( !file_exists($targetfile) ) {
-			if ( !move_uploaded_file( $tempname, $targetfile ) ) {
-				$globalErrorHandler->Warning( "Something prevented us from saving your upload '" . $filename . "'." );
-			} else {
-				if ( $postfunc ) {
-					if ( !HandleCallback1Arg( $postfunc, $targetfile ) ) {
-						return false;
-					}
+	
+			$filename = $_FILES[$fieldname]['name'];
+			$tempname = $_FILES[$fieldname]['tmp_name'];
+			$targetfile = $this->includeTrailingSlash($this->uploaddir) . $filename;
+	
+			if ( $prefunc ) {
+				if ( !HandleCallback1Arg( $prefunc, $_FILES[$fieldname] ) ) {
+					return false;
 				}
-
-				return $targetfile;
 			}
-		} else {
-			$globalErrorHandler->Warning( "File '" . $filename . "' already exists, please rename it before uploading." );
+	
+			if ( !file_exists($targetfile) ) {
+				if ( !move_uploaded_file( $tempname, $targetfile ) ) {
+					$globalErrorHandler->Warning( "Something prevented us from saving your upload '" . $filename . "'." );
+				} else {
+					if ( $postfunc ) {
+						if ( !HandleCallback1Arg( $postfunc, $targetfile ) ) {
+							return false;
+						}
+					}
+	
+					return $targetfile;
+				}
+			} else {
+				$globalErrorHandler->Warning( "File '" . $filename . "' already exists, please rename it before uploading." );
+			}
 		}
-
+		
 		return false;
 	}
 	
