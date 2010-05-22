@@ -141,9 +141,25 @@ class CMySQLDB extends CDBConnection {
 		}
 		return true;
 	}
+	
 	public function rollbackTransaction() {
+		$res = mysql_query( "rollback;", $this->link );
+		if ( !$res ) {
+			$this->lastError = $this->GetLastError();
+
+			return false;
+		}
+		return true;
 	}
+	
 	public function commitTransaction() {
+		$res = mysql_query( "commit;", $this->link );
+		if ( !$res ) {
+			$this->lastError = $this->GetLastError();
+
+			return false;
+		}
+		return true;
 	}
 }
 
