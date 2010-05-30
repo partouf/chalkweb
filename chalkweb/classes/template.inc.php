@@ -114,12 +114,12 @@ class CTemplate {
 					$odd = true;
 					$this->templateContents = substr( $this->templateContents, 0, $p1 ) . substr( $this->templateContents, $p2 + strlen($search2) );
 					$p2 = $p2 - ($p2 - $p1);
-					foreach ( $records as $values ) {
+					foreach ( $records as $indval => $values ) {
 						if ( $callbackfunction != "" ) {
 							if ( $callbackobject ) {
-								$callbackobject->$callbackfunction( $values );
+								$callbackobject->$callbackfunction( $values, $indval );
 							} else {
-								$callbackfunction( $values );
+								$callbackfunction( $values, $indval );
 							}
 						}
 
