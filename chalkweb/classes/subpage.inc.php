@@ -15,6 +15,7 @@
    limitations under the License.
 */
 
+include_once( "chalkweb/include/commonfuncs.inc.php" );
 include_once( "chalkweb/classes/template.inc.php" );
 
 class CSubPage extends CTemplate {

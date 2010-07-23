@@ -33,7 +33,7 @@ class CWebPage {
 	//-------------------------------------------------
 	protected function initMenu() {
 		if ( $this->menu == null ) {
-			$this->menu = new CMenu();
+			$this->menu = new CMainMenu();
 		}
 	}
 
