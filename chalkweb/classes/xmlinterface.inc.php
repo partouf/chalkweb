@@ -108,8 +108,14 @@ class CXmlUI_Object {
 		if ( $this->identifier && ($this->htmlclass == "window") ) {
 			$js .=
 				"function show_" . $this->identifier . "() {\n" .
-				"   var obj = $('#" . $this->identifier . "');\n" .
-				"   obj.show();\n";
+				"   var obj = $('#" . $this->identifier . "');\n";
+			if ( $this->htmlclass == "window" ) {
+				$js .=
+					"   obj.dialog('open');\n";				
+			} else {
+				$js .= 
+					"   obj.show();\n";
+			}
 			if ( $this->onShow ) {
 				$js .=
 				"   " . $this->onShow . "(obj);\n";
@@ -152,7 +158,7 @@ class CXmlUI_Object {
 		} else if ( $this->htmlclass == "button" ) {
 			$js2 .= "   \$('#" . $this->identifier . "').button();\n";
 		} else if ( $this->htmlclass == "groupbox" ) {
-			$js2 .= "   \$('#grpbox_" . $this->identifier . "').accordion( { fillSpace: true } );\n";
+			$js2 .= "   \$('#grpbox_" . $this->identifier . "').accordion( { fillSpace: true, autoHeight: false } );\n";
 		}
 		
 		if ( $js2 ) {
@@ -246,76 +252,78 @@ class CXmlUI_Object {
 	public function AsHtml() {
 		$html = "";
 	
-		$html .= 
-			"<" . $this->htmltag .
-			" id='" . $this->identifier . "'" .
-			" name='" . $this->identifier . "'" .
-			" class='" . $this->htmlclass . "'" .
-			" title='" . $this->caption . "'";
-		
-		if ( $this->htmlclass != "window" ) {
-			$html .= " style='" .
-					"position: absolute;";
-	
-			$x = $this->getX();
-			$y = $this->getY();
-
-			$html .=
-					"left: " . $x . "px;" .
-					"top: " . $y . "px;";
-		
-			if ( ($this->htmlclass == "interface") || ($this->htmlclass == "screen") || ($this->htmlclass == "root")) {
-				$html .= 
-					"width: 100%;" .
-					"height: 100%;'";
-			} else {
-				$w = $this->getW();
-				$h = $this->getH();
-				
-				$html .= 
-					"width: " . $w . "px;" .
-					"height: " . $h . "px;'";
-			}
+		if ( $this->htmlclass != "screen" ) {
+			$html .= 
+				"<" . $this->htmltag .
+				" id='" . $this->identifier . "'" .
+				" name='" . $this->identifier . "'" .
+				" class='" . $this->htmlclass . "'" .
+				" title='" . $this->caption . "'";
 			
-			if ( $this->caption ) {
-				if ( $this->htmlclass == "button" ) {
+			if ( $this->htmlclass != "window" ) {
+				$html .= " style='" .
+						"position: absolute;";
+		
+				$x = $this->getX();
+				$y = $this->getY();
+	
+				$html .=
+						"left: " . $x . "px;" .
+						"top: " . $y . "px;";
+			
+				if ( ($this->htmlclass == "interface") || ($this->htmlclass == "screen") || ($this->htmlclass == "root")) {
 					$html .= 
-						" " . $this->extraattr . " value='" . $this->caption . "'>";
-				} else if ( $this->htmlclass == "window" ) {
-					$html .= 
-						" " . $this->extraattr . ">";
-				} else if ( $this->htmlclass == "panel" ) {
-					$html .= 
-						" " . $this->extraattr . ">";
-				} else if ( $this->htmlclass == "edit" ) {
-					$html .= 
-						" " . $this->extraattr . " value='" . $this->caption . "'>";
-				} else if ( $this->htmlclass == "password" ) {
-					$html .= 
-						" " . $this->extraattr . ">";
-				} else if ( $this->htmlclass == "groupbox" ) {
+						"width: 100%;" .
+						"height: 100%;'";
+				} else {
 					$w = $this->getW();
 					$h = $this->getH();
-
-					$html .= "><div id='grpbox_" . $this->identifier . "' " .
-						"style='" . 
+					
+					$html .= 
 						"width: " . $w . "px;" .
-						"height: " . $h . "px;'>" .
-						"<h3 class='caption'><a href='#'>" . $this->caption . "</a></h3>";
-
-					$html .=
-						"<div class='groupbox_content'>";
+						"height: " . $h . "px;'";
+				}
+				
+				if ( $this->caption ) {
+					if ( $this->htmlclass == "button" ) {
+						$html .= 
+							" " . $this->extraattr . " value='" . $this->caption . "'>";
+					} else if ( $this->htmlclass == "window" ) {
+						$html .= 
+							" " . $this->extraattr . ">";
+					} else if ( $this->htmlclass == "panel" ) {
+						$html .= 
+							" " . $this->extraattr . ">";
+					} else if ( $this->htmlclass == "edit" ) {
+						$html .= 
+							" " . $this->extraattr . " value='" . $this->caption . "'>";
+					} else if ( $this->htmlclass == "password" ) {
+						$html .= 
+							" " . $this->extraattr . ">";
+					} else if ( $this->htmlclass == "groupbox" ) {
+						$w = $this->getW();
+						$h = $this->getH();
+	
+						$html .= "><div id='grpbox_" . $this->identifier . "' " .
+							"style='" . 
+							"width: " . $w . "px;" .
+							"height: " . $h . "px;'>" .
+							"<h3 class='caption'><a href='#'>" . $this->caption . "</a></h3>";
+	
+						$html .=
+							"<div class='groupbox_content'>";
+					} else {
+						$html .= 
+							" " . $this->extraattr . ">";
+						$html .= "<div class='caption'>" . $this->caption . "</div>";
+					}
 				} else {
 					$html .= 
 						" " . $this->extraattr . ">";
-					$html .= "<div class='caption'>" . $this->caption . "</div>";
 				}
 			} else {
-				$html .= 
-					" " . $this->extraattr . ">";
+				$html .= ">";
 			}
-		} else {
-			$html .= ">";
 		}
 		
 		foreach ( $this->children as $child ) {
@@ -325,7 +333,10 @@ class CXmlUI_Object {
 		if ( $this->htmlclass == "groupbox" ) {
 			$html .= "</div></div>";
 		}
-		$html .= "</" . $this->htmltag . ">";
+		
+		if ( $this->htmlclass != "screen" ) {
+			$html .= "</" . $this->htmltag . ">";
+		}
 		
 		return $html;
 	}
@@ -357,7 +368,7 @@ class CXmlUI_Reader {
 	}
 	
 	public function AsHtml() {
-		$js = "<script language='javascript'>" . $this->rootobj->getJavascriptCode() . "</script>";
+		$js = "<script language='javascript'>\n" . $this->rootobj->getJavascriptCode() . "\n</script>";
 		return $js . $this->rootobj->AsHtml();
 	}
 } 

@@ -19,12 +19,14 @@ include_once( "chalkweb/classes/errorhandling.inc.php" );
 
 
 interface CAjax {
-	public function HandleAjax( $getvars, $postvars );
+	public function PreHandleAjax( $ajhandler );
+	public function PostHandleAjax( $ajhandler, $funcreturn );
 }
 
 
 class CAjaxHandler {
 	protected $pages = array();
+	public $allowedfuncs = array();
 
 	//-------------------------------------------------
 	protected function loadPage( $page, $classname = "" ) {
@@ -65,6 +67,38 @@ class CAjaxHandler {
 		$this->pages[] = array ( $name, $classname );
 	}
 
+	protected function HandleFunctionCall( $obj, $func, $args ) {
+		$kvpairs = array();
+		$callarr = array();
+		foreach ( $args as $name => $type ) {
+			$value = null;
+			switch ( $type ) {
+				case dtTimestamp:
+				case dtInteger:
+					$value = GetPostVarAsIntVar( $name, 0 );
+					break;
+				default:
+					$value = GetRawPostVar( $name, "" );
+					break;
+			}
+			$kvpairs[$name] = $value;
+			$callarr[] = $value;
+		}
+		
+		return call_user_func_array( array( $obj, $func ), $callarr );
+	}
+	
+	protected function HandleFunctions( $obj, $allowedfuncs ) {
+		$func = $_POST['func'];
+		
+		$ret = false;
+		if ( isset($allowedfuncs[$func]) ) {
+			$ret = $this->HandleFunctionCall( $obj, $func, $allowedfuncs[$func] );
+		}
+		
+		return $ret;
+	}
+	
 	public function Show() {
 		$page = $this->checkAndLoadPage();
 		if ( !$page ) {
@@ -72,7 +106,11 @@ class CAjaxHandler {
 		}
 
 		if( $this->handlerObject instanceof CAjax ) {
-			echo $this->handlerObject->HandleAjax( $_GET, $_POST );
+			$this->handlerObject->PreHandleAjax( $this );
+			$ret = $this->HandleFunctions( $this->handlerObject, $this->allowedfuncs );
+			echo $this->handlerObject->PostHandleAjax( $this, $ret );
+		} else {
+			echo "Fatal error: class doesn't implement CAjax";
 		}
 	}
 }
