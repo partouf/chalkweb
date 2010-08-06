@@ -16,6 +16,7 @@
 */
 
 include_once( "chalkweb/classes/errorhandling.inc.php" );
+include_once( "chalkweb/include/commonfuncs.inc.php" );
 
 
 interface CAjax {
@@ -75,7 +76,7 @@ class CAjaxHandler {
 			switch ( $type ) {
 				case dtTimestamp:
 				case dtInteger:
-					$value = GetPostVarAsIntVar( $name, 0 );
+					$value = GetPostVarAsInt( $name, 0 );
 					break;
 				default:
 					$value = GetRawPostVar( $name, "" );
@@ -89,7 +90,7 @@ class CAjaxHandler {
 	}
 	
 	protected function HandleFunctions( $obj, $allowedfuncs ) {
-		$func = $_POST['func'];
+		$func = $_REQUEST['func'];
 		
 		$ret = false;
 		if ( isset($allowedfuncs[$func]) ) {

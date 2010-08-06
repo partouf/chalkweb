@@ -42,7 +42,15 @@ abstract class COpenIDLogin {
 		// defaults to false, you usually don't have use for these
 		$this->requestFullname = false;
 	}
+	
+	public function setRequestEmail( $b ) {
+		$this->requestEmail = $b;
+	}
 
+	public function setRequestFullname( $b ) {
+		$this->requestFullname = $b;
+	}
+	
 	public function setRelativeReturnUrl( $url ) {
 		$this->returnUrl = $this->getTrustRoot() . $url;
 	}
