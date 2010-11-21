@@ -76,10 +76,12 @@ class CAjaxHandler {
 			switch ( $type ) {
 				case dtTimestamp:
 				case dtInteger:
-					$value = GetPostVarAsInt( $name, 0 );
+					$value = GetGetVarAsInt( $name, 0 );
+					$value = GetPostVarAsInt( $name, $value );
 					break;
 				default:
-					$value = GetRawPostVar( $name, "" );
+					$value = GetRawGetVar( $name, "" );
+					$value = GetRawPostVar( $name, $value );
 					break;
 			}
 			$kvpairs[$name] = $value;

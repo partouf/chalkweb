@@ -31,17 +31,17 @@ class CSQLQuick extends CSQLQuery {
 				if ( $fieldIsValue ) {
 					foreach ( $arr as $f => $v ) {
 						if ( $s != "" ) {
-							$s .= ", " . $v;
+							$s .= ", " . "`" . $v . "`";
 						} else {
-							$s = $v;
+							$s = "`" . $v . "`";
 						}
 					}
 				} else {
 					foreach ( $arr as $f => $v ) {
 						if ( $s != "" ) {
-							$s .= ", " . $f;
+							$s .= ", " . "`" . $f . "`";
 						} else {
-							$s = $f;
+							$s = "`" . $f . "`";
 						}
 					}
 				}
@@ -96,7 +96,7 @@ class CSQLQuick extends CSQLQuery {
 					} else {
 						$s = " where ";
 					}
-					$s .= $f . "=:" . $f . " ";
+					$s .= "`" . $f . "`=:" . $f . " ";
 				}
 			}
 		}
@@ -115,7 +115,7 @@ class CSQLQuick extends CSQLQuery {
 					} else {
 						$s = " order by";
 					}
-					$s .= " " . $f . " " . $dir . " ";
+					$s .= " `" . $f . "` " . $dir . " ";
 				}
 			}
 		}
