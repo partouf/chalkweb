@@ -158,6 +158,13 @@ class CSQLQuery {
 	public function GetArray() {
 		return $this->currentRecord;
 	}
+	
+	public function GetRowCount() {
+		if ( ($this->currentResource != null) && ($this->currentResource !== true) ) {
+			return mysql_num_rows( $this->currentResource );
+		}
+		return 0;
+	}
 }
 
 // ------------------------------------------------------------------

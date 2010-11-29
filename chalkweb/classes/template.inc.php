@@ -96,61 +96,70 @@ class CTemplate {
 		return $sNewContent;
 	}
 
-	protected function resolveLoopVars() {
-		foreach( $this->loopVars as $loopName => $records ) {
+	protected function resolveSingleLoop( $loopName, $records, &$content ) {
+		if ( isset($this->loopCallbacks[$loopName]) ) {
 			list( $callbackobject, $callbackfunction ) = $this->loopCallbacks[$loopName];
+		} else {
+			$callbackobject = false;
+			$callbackfunction = "";
+		}
+		
+		$search1 = $this->preBlockVar . "while:begin:" . $loopName . $this->postBlockVar;
+		$search2 = $this->preBlockVar . "while:end:" . $loopName . $this->postBlockVar;
 
-			$search1 = $this->preBlockVar . "while:begin:" . $loopName . $this->postBlockVar;
-			$search2 = $this->preBlockVar . "while:end:" . $loopName . $this->postBlockVar;
-
-			$p1 = 0;
-			$p2 = 0;
-			$p1 = strpos( $this->templateContents, $search1, $p2 );
-			if ( $p1 !== false ) {
-				$p2 = strpos( $this->templateContents, $search2, $p1 );
-				if ( $p2 !== false ) {
-					$loopContentOriginal = substr( $this->templateContents, $p1 + strlen($search1), $p2 - $p1 - strlen($search1) );
-
-					$odd = true;
-					$this->templateContents = substr( $this->templateContents, 0, $p1 ) . substr( $this->templateContents, $p2 + strlen($search2) );
-					$p2 = $p2 - ($p2 - $p1);
-					foreach ( $records as $indval => $values ) {
-						if ( $callbackfunction != "" ) {
-							if ( $callbackobject ) {
-								$callbackobject->$callbackfunction( $values, $indval );
-							} else {
-								$callbackfunction( $values, $indval );
-							}
-						}
-
-						$loopContentCopy = "" . $loopContentOriginal;
-						foreach ( $values as $key => $value ) {
-							if ( is_array( $value ) ) {
-								if ( $key == "ifs" ) {
-									$loopContentCopy = $this->resolveConditionVars( $value, $loopContentCopy );
-								} else if ( $key == "trees" ) {
-									$loopContentCopy = $this->resolveTreeVars( $value, $loopContentCopy );
-								} else if ( $key == "whiles" ) {
-
-								}
-							} else {
-								$loopContentCopy = str_replace( $this->preVar . $key . $this->postVar, $value, $loopContentCopy );
-							}
-						}
-
-						if ( $odd ) {
-							$loopContentCopy = str_replace( $this->preVar . "oddeventxt" . $this->postVar, "odd", $loopContentCopy );
+		$p1 = 0;
+		$p2 = 0;
+		$p1 = strpos( $content, $search1, $p2 );
+		if ( $p1 !== false ) {
+			$p2 = strpos( $content, $search2, $p1 );
+			if ( $p2 !== false ) {
+				$loopContentOriginal = substr( $content, $p1 + strlen($search1), $p2 - $p1 - strlen($search1) );
+				
+				$odd = true;
+				$content = substr( $content, 0, $p1 ) . substr( $content, $p2 + strlen($search2) );
+				$p2 = $p2 - ($p2 - $p1);
+				foreach ( $records as $indval => $values ) {
+					if ( $callbackfunction != "" ) {
+						if ( $callbackobject ) {
+							$callbackobject->$callbackfunction( $values, $indval );
 						} else {
-							$loopContentCopy = str_replace( $this->preVar . "oddeventxt" . $this->postVar, "even", $loopContentCopy );
+							$callbackfunction( $values, $indval );
 						}
-
-						$this->templateContents = substr( $this->templateContents, 0, $p2 ) . $loopContentCopy . substr( $this->templateContents, $p2 );
-						$p2 = $p2 + strlen( $loopContentCopy );
-
-						$odd = !$odd;
 					}
+
+					$loopContentCopy = "" . $loopContentOriginal;
+					foreach ( $values as $key => $value ) {
+						if ( is_array( $value ) ) {
+							if ( $key == "ifs" ) {
+								$loopContentCopy = $this->resolveConditionVars( $value, $loopContentCopy );
+							} else if ( $key == "trees" ) {
+								$loopContentCopy = $this->resolveTreeVars( $value, $loopContentCopy );
+							} else if ( $key == "whiles" ) {
+								$this->resolveLoopVars( $value, $loopContentCopy );
+							}
+						} else {
+							$loopContentCopy = str_replace( $this->preVar . $key . $this->postVar, $value, $loopContentCopy );
+						}
+					}
+
+					if ( $odd ) {
+						$loopContentCopy = str_replace( $this->preVar . "oddeventxt" . $this->postVar, "odd", $loopContentCopy );
+					} else {
+						$loopContentCopy = str_replace( $this->preVar . "oddeventxt" . $this->postVar, "even", $loopContentCopy );
+					}
+
+					$content = substr( $content, 0, $p2 ) . $loopContentCopy . substr( $content, $p2 );
+					$p2 = $p2 + strlen( $loopContentCopy );
+
+					$odd = !$odd;
 				}
 			}
+		}
+	}
+	
+	protected function resolveLoopVars( $loops, &$content ) {
+		foreach( $loops as $loopName => $records ) {
+			$this->resolveSingleLoop( $loopName, $records, $content );
 		}
 	}
 
@@ -237,7 +246,7 @@ class CTemplate {
 	public function Process() {
 		$this->retreiveContents();
 
-		$this->resolveLoopVars();
+		$this->resolveLoopVars( $this->loopVars, $this->templateContents );
 		$this->templateContents = $this->resolveConditionVars( $this->conditionVars, $this->templateContents );
 		$this->templateContents = $this->resolveTreeVars( $this->treeVars, $this->templateContents );
 		$this->resolveValueVars();

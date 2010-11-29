@@ -86,17 +86,22 @@ class CSubPage extends CTemplate {
 				$globalErrorHandler->Warning( "Filesize of '" . $filename . "' exceeds the maximum allowed filesize." );
 				return false;
 			}
-	
-			$filename = $_FILES[$fieldname]['name'];
+			
 			$tempname = $_FILES[$fieldname]['tmp_name'];
-			$targetfile = $this->includeTrailingSlash($this->uploaddir) . $filename;
-	
+			$filename = $_FILES[$fieldname]['name'];
 			if ( $prefunc ) {
-				if ( !HandleCallback1Arg( $prefunc, $_FILES[$fieldname] ) ) {
+				if ( !($res = HandleCallback1Arg( $prefunc, $_FILES[$fieldname] )) ) {
 					return false;
+				} else {
+					if ( is_string($res) ) {
+						$filename = $res;
+					}
 				}
 			}
-	
+
+			$targetfile = $this->includeTrailingSlash($this->uploaddir) . $filename;
+			
+			
 			if ( !file_exists($targetfile) ) {
 				if ( !move_uploaded_file( $tempname, $targetfile ) ) {
 					$globalErrorHandler->Warning( "Something prevented us from saving your upload '" . $filename . "'." );
