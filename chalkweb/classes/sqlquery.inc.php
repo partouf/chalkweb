@@ -165,6 +165,18 @@ class CSQLQuery {
 		}
 		return 0;
 	}
+	
+	public function Iterate( $f ) {
+		if ( is_array($f) ) {
+			while ( $this->Next() ) {
+				$f[0]->$f[1]( $this->GetArray() );
+			}
+		} else if ( is_string($f) ) {
+			while ( $this->Next() ) {
+				$f( $this->GetArray() );
+			}
+		}
+	}
 }
 
 // ------------------------------------------------------------------

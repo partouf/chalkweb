@@ -162,6 +162,58 @@ class CTemplate {
 			$this->resolveSingleLoop( $loopName, $records, $content );
 		}
 	}
+	
+	protected function resolveQueries() {
+		foreach( $this->queries as $loopName => $query ) {
+			list( $callbackobject, $callbackfunction ) = $this->queryCallbacks[$loopName];
+
+			$search1 = $this->preBlockVar . "while:begin:" . $loopName . $this->postBlockVar;
+			$search2 = $this->preBlockVar . "while:end:" . $loopName . $this->postBlockVar;
+
+			$p1 = 0;
+			$p2 = 0;
+			$p1 = strpos( $this->templateContents, $search1, $p2 );
+			if ( $p1 !== false ) {
+				$p2 = strpos( $this->templateContents, $search2, $p1 );
+				if ( $p2 !== false ) {
+					$loopContentOriginal = substr( $this->templateContents, $p1 + strlen($search1), $p2 - $p1 - strlen($search1) );
+
+					$odd = true;
+					$this->templateContents = substr( $this->templateContents, 0, $p1 ) . substr( $this->templateContents, $p2 + strlen($search2) );
+					$p2 = $p2 - ($p2 - $p1);
+					$indval = 0;
+					while ( $query->Next() ) {
+						$values = $query->GetArray();
+
+						if ( $callbackfunction != "" ) {
+							if ( $callbackobject ) {
+								$callbackobject->$callbackfunction( $values, $indval );
+							} else {
+								$callbackfunction( $values, $indval );
+							}
+						}
+
+						$loopContentCopy = "" . $loopContentOriginal;
+						foreach ( $values as $key => $value ) {
+							$loopContentCopy = str_replace( $this->preVar . $key . $this->postVar, $value, $loopContentCopy );
+						}
+
+						if ( $odd ) {
+							$loopContentCopy = str_replace( $this->preVar . "oddeventxt" . $this->postVar, "odd", $loopContentCopy );
+						} else {
+							$loopContentCopy = str_replace( $this->preVar . "oddeventxt" . $this->postVar, "even", $loopContentCopy );
+						}
+
+						$this->templateContents = substr( $this->templateContents, 0, $p2 ) . $loopContentCopy . substr( $this->templateContents, $p2 );
+						$p2 = $p2 + strlen( $loopContentCopy );
+
+						$odd = !$odd;
+						$indval++;
+					}
+				}
+			}
+		}
+	}
 
 	protected function getHtmlTree( $lstItems, $ordered ) {
 		$html = "";
@@ -246,6 +298,7 @@ class CTemplate {
 	public function Process() {
 		$this->retreiveContents();
 
+		$this->resolveQueries();
 		$this->resolveLoopVars( $this->loopVars, $this->templateContents );
 		$this->templateContents = $this->resolveConditionVars( $this->conditionVars, $this->templateContents );
 		$this->templateContents = $this->resolveTreeVars( $this->treeVars, $this->templateContents );
