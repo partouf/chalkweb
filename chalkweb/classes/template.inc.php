@@ -19,6 +19,8 @@ include_once( "chalkweb/classes/errorhandling.inc.php" );
 
 
 class CTemplate {
+	protected $queries = array ();
+	protected $queryCallbacks = array ();
 	protected $valueVars = array ();
 	protected $conditionVars = array ();
 	protected $loopVars = array ();
@@ -285,6 +287,12 @@ class CTemplate {
 		// $value is expected to be an array with multiple key => value variables
 		$this->loopVars[$key] = $value;
 		$this->loopCallbacks[$key] = array( $rendercallbackobject, $rendercallbackfunction );
+	}
+
+	public function AssignQuery( $key, $query, &$rendercallbackobject = null, $rendercallbackfunction = "" ) {
+		// $query is expected to be a CSQLQuery object
+		$this->queries[$key] = $query;
+		$this->queryCallbacks[$key] = array( $rendercallbackobject, $rendercallbackfunction );
 	}
 
 	public function AssignTree( $key, $value ) {
