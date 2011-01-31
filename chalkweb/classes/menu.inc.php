@@ -56,7 +56,11 @@ class CMainMenu extends CTemplate {
 			$submenuobj->Prepare();
 			$loop[] = array ( "title" => $name, "submenu" => $submenuobj->Process() );
 		}
-			$this->AssignLoop( "menu", $loop );
+		$this->AssignLoop( "menu", $loop, $this, "Decode" );
+	}
+	
+	public function Decode( &$record ) {
+		$record['submenu'] = html_entity_decode($record['submenu']);
 	}
 }
 

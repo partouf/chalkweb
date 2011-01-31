@@ -105,4 +105,8 @@ function HandleCallback1Arg( $callback, $arg ) {
 	return false;
 }
 
+function AllowHtml( $s ) {
+	return html_entity_decode( $s, ENT_QUOTES, "UTF-8" );
+}
+
 ?>

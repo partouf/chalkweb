@@ -27,7 +27,7 @@ class CSubPage extends CTemplate {
 	protected $subtitle = "";
 	
 	protected function getPageCount() {
-		return floor($this->itemCount / $this->itemsPerPage);
+		return ceil($this->itemCount / $this->itemsPerPage);
 	}
 
 	protected function getItemPos() {
@@ -37,7 +37,7 @@ class CSubPage extends CTemplate {
 	protected function hasNextPage() {
 		$c = $this->getPageCount();
 
-		return (($c >= 1) && ($this->currentPage <= $c));
+		return (($c >= 1) && ($this->currentPage < $c));
 	}
 
 	protected function hasPreviousPage() {

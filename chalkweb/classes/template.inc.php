@@ -121,6 +121,12 @@ class CTemplate {
 				$content = substr( $content, 0, $p1 ) . substr( $content, $p2 + strlen($search2) );
 				$p2 = $p2 - ($p2 - $p1);
 				foreach ( $records as $indval => $values ) {
+					foreach ( $values as $key => $value ) {
+						if ( !is_array( $value ) ) {
+							$values[$key] = htmlentities($value, ENT_QUOTES, "UTF-8");
+						}
+					}
+
 					if ( $callbackfunction != "" ) {
 						if ( $callbackobject ) {
 							$callbackobject->$callbackfunction( $values, $indval );
@@ -186,6 +192,9 @@ class CTemplate {
 					$indval = 0;
 					while ( $query->Next() ) {
 						$values = $query->GetArray();
+						foreach ( $values as $key => $value ) {
+							$values[$key] = htmlentities($value, ENT_QUOTES, "UTF-8");
+						}
 
 						if ( $callbackfunction != "" ) {
 							if ( $callbackobject ) {
@@ -230,7 +239,7 @@ class CTemplate {
 			if ( is_array($item) ) {
 				$html .= $this->getHtmlTree( $item, $ordered );
 			} else {
-				$html .= "<li>" . $item . "</li>";
+				$html .= "<li>" . htmlentities($item, ENT_QUOTES, "UTF-8") . "</li>";
 			}
 		}
 
@@ -268,8 +277,12 @@ class CTemplate {
 		$this->templateContents = "";
 	}
 
-	public function AssignValue( $key, $value ) {
-		$this->valueVars[$key] = $value;
+	public function AssignValue( $key, $value, $html = false ) {
+		if ( $html ) {
+			$this->valueVars[$key] = htmlentities($value, ENT_QUOTES, "UTF-8");
+		} else {
+			$this->valueVars[$key] = $value;
+		}
 	}
 
 	public function AssignValues( $values ) {
