@@ -19,148 +19,211 @@ include_once( "chalkweb/classes/errorhandling.inc.php" );
 
 
 class CDBConnection {
-	protected $lastError;
-	protected $queries;
+    protected $lastError;
+    protected $queries;
 
-	public function __construct() {
-		$this->queries = array();
-	}
+    public function __construct() {
+        $this->queries = array();
+    }
 
-	public function Query( $sql ) {
-		$this->queries[] = array ( "query" => $sql );
-	}
+    public function Query( $sql ) {
+        $this->queries[] = array ( "query" => $sql );
+    }
 
-	public function GetAllQueries() {
-		return $this->queries;
-	}
+    public function GetAllQueries() {
+        return $this->queries;
+    }
 }
 
 
 class CMySQLDB extends CDBConnection {
-	protected $server;
-	protected $port;
+    protected $server;
+    protected $port;
 
-	protected $dbname;
-	protected $username;
-	protected $password;
+    protected $dbname;
+    protected $username;
+    protected $password;
 
-	protected $link;
+    protected $link;
 
-	// ----------------------------------------------------
-	protected function connectToServer() {
-		if ( $this->port != 3306 ) {
-			$this->link = mysql_connect( $this->server . ":" . $this->port, $this->username, $this->password, true );
-		} else {
-			$this->link = mysql_connect( $this->server, $this->username, $this->password, true );
-		}
+    /***
+     * @var PDO $pdolink
+     */
+    protected $pdolink;
 
-		if ( !$this->link ) {
-			$this->lastError = $this->GetLastError();
+    /***
+     * @var PDOStatement $pdolaststmt
+     */
+    protected $pdolaststmt;
 
-			return false;
-		}
+    protected $affectedrows = 0;
 
-		if ( !mysql_set_charset( "utf8", $this->link ) ) {
-			$this->lastError = $this->GetLastError();
+    // ----------------------------------------------------
+    protected function connectToServer() {
+        try {
+            if ( $this->port != 3306 ) {
+                $this->pdolink = new PDO(
+                    "mysql:host=" . $this->server .
+                    ";port=" . $this->port .
+                    ";dbname=" . $this->dbname .
+                    ";charset=utf8",
+                    $this->username,
+                    $this->password,
+                    array(PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+                return false;
+            } else {
+                $this->pdolink = new PDO(
+                    "mysql:host=" . $this->server .
+                    ";dbname=" . $this->dbname .
+                    ";charset=utf8",
+                    $this->username,
+                    $this->password,
+                    array(PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+            }
+        } catch(PDOException $ex) {
+            $this->lastError = $ex->getMessage();
+        }
 
-			return false;
-		}
+        if ( !$this->pdolink ) {
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	protected function selectDatabase() {
-		$ok = mysql_select_db( $this->dbname, $this->link );
-		if ( !$ok ) {
-			$this->lastError = $this->GetLastError();
-		}
+    // ----------------------------------------------------
+    public function __construct( $dbname, $server = "localhost", $port = 3306, $user = "root", $pass = "" ) {
+        global $globalErrorHandler;
 
-		return $ok;
-	}
+        parent::__construct();
 
-	// ----------------------------------------------------
-	public function __construct( $dbname, $server = "localhost", $port = 3306, $user = "root", $pass = "" ) {
-		global $globalErrorHandler;
+        $this->server = $server;
+        $this->port = $port;
 
-		parent::__construct();
+        $this->dbname = $dbname;
 
-		$this->server = $server;
-		$this->port = $port;
+        $this->username = $user;
+        $this->password = $pass;
 
-		$this->dbname = $dbname;
+        if ( !$this->connectToServer() ) {
+            $globalErrorHandler->Fatal( "Can't connect to database server (" . $this->lastError . ")" );
+        }
+    }
 
-		$this->username = $user;
-		$this->password = $pass;
+    public function GetInsertId() {
+        return $this->pdolink->lastInsertId();
+    }
 
-		if ( !$this->connectToServer() ) {
-			$globalErrorHandler->Fatal( "Can't connect to database server (" . $this->lastError . ")" );
-		} else {
-			if ( !$this->selectDatabase() ) {
-				$globalErrorHandler->Fatal( "Unable to select database (" . $this->lastError . ")" );
-			}
-		}
-	}
+    public function AffectedRows() {
+        return $this->affectedrows;
+    }
 
-	public function GetInsertId() {
-		return mysql_insert_id( $this->link );
-	}
+    public function RowCount(&$res) {
+        return $res->rowCount();
+    }
 
-	public function AffectedRows() {
-		return mysql_affected_rows( $this->link );
-	}
+    public function Query( $sql, $arrParameters = false ) {
+        parent::Query( $sql );
 
-	public function Query( $sql ) {
-		parent::Query( $sql );
+        $res = false;
+        try {
+            /***
+             * @var PDOStatement $res
+             */
+            $res = $this->pdolink->prepare($sql);
 
-		$res = mysql_query( $sql, $this->link );
-		if ( !$res ) {
-			$this->lastError = $this->GetLastError();
-		}
+            if ($arrParameters) {
+                // example $arrParameters = array( "abc" => array(dtInteger, 123), "def" => array(dtString, "test"))
 
-		return $res;
-	}
+                foreach ( $arrParameters as $param => $value ) {
+                    $iType = $value[0];
+                    $aValue = $value[1];
+                    $sParam = ":" . $param;
 
-	public function Escape( $s ) {
-		return mysql_real_escape_string( $s, $this->link );
-	}
+                    $oType = PDO::PARAM_NULL;
+                    if ($iType == dtInteger) {
+                        $oType = PDO::PARAM_INT;
+                    } else if ($iType == dtString) {
+                        $oType = PDO::PARAM_STR;
+                    } else if ($iType == dtBoolean) {
+                        $oType = PDO::PARAM_INT;
+                        $aValue = !empty($aValue) ? 1 : 0;
+                    } else if ($iType == dtTimestamp) {
+                        $oType = PDO::PARAM_STR;
+                        $aValue = date( "Y-m-d H:i:s", $aValue );
+                    }
 
-	public function GetLastError() {
-		if ( !$this->link ) {
-			return mysql_error();
-		} else {
-			return mysql_error( $this->link );
-		}
-	}
+                    // note: dtRaw dtRawEscaped dtIdentifier should be handled before calling this function
+                    //  also if you have these types, make sure they have no overlapping name with the regular parameters
 
-	public function startTransaction() {
-		$res = mysql_query( "start transaction;", $this->link );
-		if ( !$res ) {
-			$this->lastError = $this->GetLastError();
+                    // note: params should have unique names, even if you want to assign the same values multiple times
 
-			return false;
-		}
-		return true;
-	}
-	
-	public function rollbackTransaction() {
-		$res = mysql_query( "rollback;", $this->link );
-		if ( !$res ) {
-			$this->lastError = $this->GetLastError();
+                    if ($oType != PDO::PARAM_NULL) {
+                        $res->bindValue($sParam, $aValue, $oType);
+                    }
+                }
+            }
 
-			return false;
-		}
-		return true;
-	}
-	
-	public function commitTransaction() {
-		$res = mysql_query( "commit;", $this->link );
-		if ( !$res ) {
-			$this->lastError = $this->GetLastError();
+            $res->execute();
+            $this->pdolaststmt = $res;
 
-			return false;
-		}
-		return true;
-	}
+            $this->affectedrows = $res->rowCount();
+        } catch(PDOException $ex) {
+            $this->lastError = $ex->getMessage();
+            $this->pdolaststmt = false;
+        }
+
+        return $res;
+    }
+
+    /***
+     * @param PDOStatement $res
+     */
+    public function FreeResult( &$res ) {
+        $res->closeCursor();
+    }
+
+    /***
+     * @param PDOStatement $res
+     * @param mixed $type
+     * @return mixed
+     */
+    public function Fetch( &$res, $type = false ) {
+        try {
+            if ($type == MYSQL_NUM) {
+                return $res->fetch(PDO::FETCH_NUM);
+            } else {
+                return $res->fetch(PDO::FETCH_ASSOC);
+            }
+        } catch(PDOException $ex) {
+            $this->lastError = $ex->getMessage();
+        }
+
+        return false;
+    }
+
+    /***
+     * @param string $s
+     * @return string
+     */
+    public function Escape( $s ) {
+        return $this->pdolink->quote($s);
+    }
+
+    public function GetLastError() {
+        return $this->lastError;
+    }
+
+    public function startTransaction() {
+        return $this->pdolink->beginTransaction();
+    }
+
+    public function rollbackTransaction() {
+        return $this->pdolink->rollBack();
+    }
+
+    public function commitTransaction() {
+        return $this->pdolink->commit();
+    }
 }
 
-?>

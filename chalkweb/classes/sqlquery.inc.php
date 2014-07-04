@@ -21,6 +21,9 @@ define( "dtRaw", 0 );
 define( "dtString", 1 );
 define( "dtInteger", 2 );
 define( "dtTimestamp", 3 );
+
+define( "dtBoolean", 6 );
+
 define( "dtIdentifier", 10 );
 define( "dtRawEscaped", 11 );
 
@@ -36,6 +39,7 @@ function paramlengthsort( $a, $b ) {
 class CSQLQuery {
 	protected $currentQuery = "";
 	protected $resolvedQuery = "";
+    protected $resolvedPDOQuery = "";
 	protected $parameters = array();
 	protected $db = null;
 
@@ -44,18 +48,28 @@ class CSQLQuery {
 
 	protected function resolveParams() {
 		$this->resolvedQuery = "" . $this->currentQuery;
+        $this->resolvedPDOQuery = "" . $this->currentQuery;
 
 		uksort( $this->parameters, "paramlengthsort" );
-
 		foreach ( $this->parameters as $param => $value ) {
 			$iType = $value[0];
 			$aValue = $value[1];
 			$sParam = ":" . $param;
 
-			if ( $iType == dtRaw ) {
+            // if :param occurs more than once, emit error
+            $c = substr_count($this->resolvedPDOQuery, $sParam);
+            if ($c > 1) {
+                throw new Exception("Can't use the same parameter more than once ($sParam in query \"" . $this->currentQuery . "\")");
+            }
+
+            if ( $iType == dtRaw ) {
 				$this->resolvedQuery = str_replace( $sParam, $aValue, $this->resolvedQuery );
+
+                $this->resolvedPDOQuery = str_replace( $sParam, $aValue, $this->resolvedPDOQuery );
 			} else if ( $iType == dtRawEscaped ) {
 				$this->resolvedQuery = str_replace( $sParam, $this->db->Escape( $aValue ), $this->resolvedQuery );
+
+                $this->resolvedPDOQuery = str_replace( $sParam, $this->db->Escape( $aValue ), $this->resolvedPDOQuery );
 			} else if ( $iType == dtString ) {
 				$this->resolvedQuery = str_replace( $sParam, "'" . $this->db->Escape( $aValue ) . "'", $this->resolvedQuery );
 			} else if ( $iType == dtInteger ) {
@@ -63,9 +77,13 @@ class CSQLQuery {
 			} else if ( $iType == dtTimestamp ) {
 				// mysql specific
 				$this->resolvedQuery = str_replace( $sParam, "'" . date( "Y-m-d H:i:s", $aValue ) . "'", $this->resolvedQuery );
+            } else if ( $iType == dtBoolean ) {
+                $this->resolvedQuery = str_replace( $sParam, ($aValue ? 1 : 0), $this->resolvedQuery );
 			} else if ( $iType == dtIdentifier ) {
 				// mysql specific
 				$this->resolvedQuery = str_replace( $sParam, "`" . $this->db->Escape( $aValue ) . "`", $this->resolvedQuery );
+
+                $this->resolvedPDOQuery = str_replace( $sParam, "`" . $this->db->Escape( $aValue ) . "`", $this->resolvedPDOQuery );
 			}
 		}
 	}
@@ -90,7 +108,14 @@ class CSQLQuery {
 		return $this->resolvedQuery;
 	}
 
-	public function AddParam( $iType, $sName, $aValue, $bTypeMismatchIsFatal = true ) {
+    /**
+     * @param integer $iType
+     * @param string $sName
+     * @param * $aValue
+     * @param bool $bTypeMismatchIsFatal
+     * @return bool
+     */
+    public function AddParam( $iType, $sName, $aValue, $bTypeMismatchIsFatal = true ) {
 		global $globalErrorHandler;
 
 		if ( $iType == dtInteger ) {
@@ -107,7 +132,14 @@ class CSQLQuery {
 					}
 					return false;
 			}
-		}
+		} else if ( $iType == dtString ) {
+            if ( !is_string($aValue) ) {
+                if ( $bTypeMismatchIsFatal ) {
+                    $globalErrorHandler->Fatal( "CSQLQuery(" . $this->currentQuery . ") -> Value for " . $sName . " is not a valid string." );
+                }
+                return false;
+            }
+        }
 
 		$this->parameters[$sName] = array( $iType, $aValue );
 
@@ -117,7 +149,7 @@ class CSQLQuery {
 	public function Open() {
 		$this->resolveParams();
 
-		$this->currentResource = $this->db->Query( $this->resolvedQuery );
+		$this->currentResource = $this->db->Query( $this->resolvedPDOQuery, $this->parameters );
 
 		if ( $this->currentResource ) {
 			return true;
@@ -127,7 +159,7 @@ class CSQLQuery {
 
 	public function Next( $type = MYSQL_ASSOC ) {
 		if ( $this->currentResource ) {
-			$this->currentRecord = mysql_fetch_array( $this->currentResource, $type );
+			$this->currentRecord = $this->db->Fetch($this->currentResource, $type);
 		} else {
 			return false;
 		}
@@ -140,7 +172,7 @@ class CSQLQuery {
 
 	public function Close() {
 		if ( ($this->currentResource != null) && ($this->currentResource !== true) ) {
-			mysql_free_result( $this->currentResource );
+            $this->db->FreeResult($this->currentResource);
 		}
 
 		$this->currentResource = null;
@@ -161,11 +193,11 @@ class CSQLQuery {
 	
 	public function GetRowCount() {
 		if ( ($this->currentResource != null) && ($this->currentResource !== true) ) {
-			return mysql_num_rows( $this->currentResource );
-		}
+			return $this->db->RowCount($this->currentResource);
+        }
 		return 0;
 	}
-	
+
 	public function Iterate( $f ) {
 		if ( is_array($f) ) {
 			while ( $this->Next() ) {
