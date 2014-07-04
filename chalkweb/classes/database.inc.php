@@ -115,11 +115,12 @@ class CMySQLDB extends CDBConnection {
     }
 
     public function AffectedRows() {
+        $this->affectedrows = $this->pdolaststmt->rowCount();
         return $this->affectedrows;
     }
 
     public function RowCount(&$res) {
-        return $res->rowCount();
+        throw new Exception("RowCount deprecated");
     }
 
     public function Query( $sql, $arrParameters = false ) {
@@ -166,8 +167,6 @@ class CMySQLDB extends CDBConnection {
 
             $res->execute();
             $this->pdolaststmt = $res;
-
-            $this->affectedrows = $res->rowCount();
         } catch(PDOException $ex) {
             $this->lastError = $ex->getMessage();
             $this->pdolaststmt = false;
@@ -207,7 +206,9 @@ class CMySQLDB extends CDBConnection {
      * @return string
      */
     public function Escape( $s ) {
-        return $this->pdolink->quote($s);
+        $es = $this->pdolink->quote($s);
+
+        return substr($es, 1, -1);
     }
 
     public function GetLastError() {
