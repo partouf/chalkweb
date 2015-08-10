@@ -15,6 +15,24 @@
    limitations under the License.
 */
 
+$gXmlUiSettings = array(
+    "windowClientAreaOffset" => 0,
+    "groupboxClientAreaOffset" => 60,
+    "counter" => 0
+);
+
+function initGlobalUiSettings() {
+    global $gXmlUiSettings;
+
+    if (!isset($gXmlUiSettings)) {
+        $gXmlUiSettings = array(
+            "windowClientAreaOffset" => 0,
+            "groupboxClientAreaOffset" => 60,
+            "counter" => 0
+        );
+    }
+}
+
 class CXmlUI_Object {
 	protected $htmltag = "div";
 	public $htmlclass = "object";
@@ -27,17 +45,25 @@ class CXmlUI_Object {
 	protected $w = 125;
 	protected $h = 25;
 	public $parent = null;
-	
+
 	public $visible = true;
 	
 	protected $onHide = "";
 	protected $onShow = "";
 	protected $onClick = "";
+
+    protected $windowClientAreaOffset = 60;
+    protected $groupboxClientAreaOffset = 55;
 	
 	protected $children = array();
 	
 	public function __construct( $c = "object" ) {
-		$this->htmlclass = $c;
+        global $gXmlUiSettings;
+
+        $this->windowClientAreaOffset = $gXmlUiSettings['windowClientAreaOffset'];
+        $this->groupboxClientAreaOffset = $gXmlUiSettings['groupboxClientAreaOffset'];
+
+        $this->htmlclass = $c;
 	}
 	
 	public function AddChild( $obj ) {
@@ -46,14 +72,30 @@ class CXmlUI_Object {
 	}
 	
 	public function LoadFromDOMNode( $node ) {
+        global $gXmlUiSettings;
+
 		$this->htmlclass = $node->nodeName;
+        if ($this->htmlclass == "label") {
+            $this->htmlclass = "uilabel";
+        }
 		
 		if ( $node->hasAttributes() ) {
 			$this->identifier = $node->getAttribute("identifier");
 			$this->caption = $node->getAttribute("caption");
 			$this->x = $node->getAttribute("x");
 			$this->y = $node->getAttribute("y");
-			
+            if (strpos($this->y, "i")) {
+                $arr = explode(";", $this->y);
+
+                $s = "\$this->y = " . str_replace("i", "" . $gXmlUiSettings['counter'], $arr[0]) . ";";
+                eval($s);
+                if (count($arr)>1) {
+                    if ($arr[1] == "i++") {
+                        $gXmlUiSettings['counter'] = $gXmlUiSettings['counter'] + 1;
+                    }
+                }
+            }
+
 			if ( $node->hasAttribute("w") ) {
 				$this->w = $node->getAttribute("w");
 			}
@@ -89,7 +131,10 @@ class CXmlUI_Object {
 		} else if ( $this->htmlclass == "password" ) {
 			$this->htmltag = "input";
 			$this->extraattr = "type='password'";
-		}
+		} else if ( $this->htmlclass == "checkbox" ) {
+            $this->htmltag = "input";
+            $this->extraattr = "type='checkbox'";
+        }
 		
 		if ( $node->hasChildNodes() ) {
 			foreach ( $node->childNodes as $child ) {
@@ -188,7 +233,7 @@ class CXmlUI_Object {
 		$yp = 0;
 		if ( $this->parent ) {
 			if ( $this->parent->htmlclass == "window" ) {
-				$yp += 60;
+				$yp += $this->windowClientAreaOffset;
 			}
 			
 			if ( $this->y < 0 ) {
@@ -223,7 +268,7 @@ class CXmlUI_Object {
 		if ( $this->parent ) {
 			$hp = 0;
 			if ( $this->parent->htmlclass == "window" ) {
-				$hp = 60;
+				$hp = $this->windowClientAreaOffset;
 			}
 			
 			if ( $this->h <= 0 ) {
@@ -241,9 +286,9 @@ class CXmlUI_Object {
 	public function getClientH() {
 		$hp = 0;
 		if ( $this->htmlclass == "window" ) {
-			$hp = 60;
+			$hp = $this->windowClientAreaOffset;
 		} else if ( $this->htmlclass == "groupbox" ) {
-			$hp = 55;
+			$hp = $this->groupboxClientAreaOffset;
 		} 
 	
 		return $this->getH() - $hp;
@@ -348,9 +393,13 @@ class CXmlUI_Reader {
 	
 	public function __construct() {
 		$this->filename = "";
+
+        initGlobalUiSettings();
 	}
 
 	public function LoadFromFile( $filename ) {
+        global $gXmlUiSettings;
+
 		$this->filename = $filename;
 		
 		$objDOM = new DOMDocument();
@@ -360,6 +409,8 @@ class CXmlUI_Reader {
 		
 		$nodes = $objDOM->getElementsByTagName("window");
 		foreach ( $nodes as $child ) {
+            $gXmlUiSettings['counter'] = 0;
+            
 			$obj = new CXmlUI_Object();
 			$obj->LoadFromDOMNode( $child );
 			

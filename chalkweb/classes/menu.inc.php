@@ -20,7 +20,7 @@ include_once( "chalkweb/classes/errorhandling.inc.php" );
 include_once( "chalkweb/classes/template.inc.php" );
 
 class CSubMenu extends CTemplate {
-	protected $pages = array ();
+	public $pages = array ();
 
 	public function __construct( $addhome = true ) {
 		parent::__construct( "chalkweb/basetemplates/submenu.tpl" );

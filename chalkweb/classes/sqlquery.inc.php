@@ -100,6 +100,7 @@ class CSQLQuery {
 
 	public function SetQuery( $sql ) {
 		$this->currentQuery = $sql;
+        $this->parameters = array();
 	}
 
 	public function GetResolvedQuery() {
@@ -149,7 +150,7 @@ class CSQLQuery {
 	public function Open() {
 		$this->resolveParams();
 
-		$this->currentResource = $this->db->Query( $this->resolvedPDOQuery, $this->parameters );
+		$this->currentResource = $this->db->Query( $this->resolvedPDOQuery, $this->parameters, $this->GetResolvedQuery() );
 
 		if ( $this->currentResource ) {
 			return true;

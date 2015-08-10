@@ -83,7 +83,7 @@ function GetPostOrSessionAsInt( $varname, $default = -1 ) {
 		}
 	}
 
-	return $val;
+	return $i;
 }
 
 function HandleCallback1Arg( $callback, $arg ) {

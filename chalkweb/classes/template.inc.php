@@ -206,7 +206,17 @@ class CTemplate {
 
 						$loopContentCopy = "" . $loopContentOriginal;
 						foreach ( $values as $key => $value ) {
-							$loopContentCopy = str_replace( $this->preVar . $key . $this->postVar, $value, $loopContentCopy );
+                            if ( is_array( $value ) ) {
+                                if ( $key == "ifs" ) {
+                                    $loopContentCopy = $this->resolveConditionVars( $value, $loopContentCopy );
+                                } else if ( $key == "trees" ) {
+                                    $loopContentCopy = $this->resolveTreeVars( $value, $loopContentCopy );
+                                } else if ( $key == "whiles" ) {
+                                    $this->resolveLoopVars( $value, $loopContentCopy );
+                                }
+                            } else {
+    							$loopContentCopy = str_replace( $this->preVar . $key . $this->postVar, $value, $loopContentCopy );
+                            }
 						}
 
 						if ( $odd ) {
@@ -285,9 +295,9 @@ class CTemplate {
 		}
 	}
 
-	public function AssignValues( $values ) {
+	public function AssignValues( $values, $prefix = "" ) {
 		foreach ( $values as $key => $value ) {
-			$this->valueVars[$key] = $value;
+			$this->valueVars[$prefix . $key] = $value;
 		}
 	}
 

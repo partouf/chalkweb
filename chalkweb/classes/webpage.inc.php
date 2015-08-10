@@ -50,6 +50,8 @@ class CWebPage {
 	}
 
 	protected function loadPage( $page, $classname = "" ) {
+        $this->requestedPage = $page;
+
 		include_once( "pages/" . $page . ".php" );
 
 		if ( $classname == "" ) { 

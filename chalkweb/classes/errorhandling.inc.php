@@ -19,9 +19,9 @@ $globalErrorHandler = null;
 
 
 class CErrorHandler {
-	protected $directOutputWarning;
-	protected $directOutputFatal;
-	protected $dieOnFatal;
+	public $directOutputWarning;
+    public $directOutputFatal;
+    public $dieOnFatal;
 	protected $lstWarnings = array ();
 	protected $lstFatals = array ();
 
@@ -48,6 +48,10 @@ class CErrorHandler {
 			}
 		} else {
 			$this->lstFatals[] = array ( "msg" => $msg );
+
+            if ( $this->dieOnFatal ) {
+                die();
+            }
 		}
 	}
 

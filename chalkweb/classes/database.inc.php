@@ -26,8 +26,8 @@ class CDBConnection {
         $this->queries = array();
     }
 
-    public function Query( $sql ) {
-        $this->queries[] = array ( "query" => $sql );
+    public function Query( $sql, $sResolvedQueryHint = "" ) {
+        $this->queries[] = array ( "query" => $sql, "resolvedqueryhint" => $sResolvedQueryHint );
     }
 
     public function GetAllQueries() {
@@ -123,10 +123,11 @@ class CMySQLDB extends CDBConnection {
         throw new Exception("RowCount deprecated");
     }
 
-    public function Query( $sql, $arrParameters = false ) {
-        parent::Query( $sql );
+    public function Query( $sql, $arrParameters = false, $sResolvedQueryHint = "" ) {
+        parent::Query( $sql, $sResolvedQueryHint );
 
         $res = false;
+        $allParamBindingCalls = "";
         try {
             /***
              * @var PDOStatement $res
@@ -160,7 +161,18 @@ class CMySQLDB extends CDBConnection {
                     // note: params should have unique names, even if you want to assign the same values multiple times
 
                     if ($oType != PDO::PARAM_NULL) {
-                        $res->bindValue($sParam, $aValue, $oType);
+                        try {
+                            $res->bindValue($sParam, $aValue, $oType);
+
+                            $allParamBindingCalls .= "bindValue(" . $sParam . "," . $aValue . "," . $oType . ");";
+                        } catch(PDOException $e) {
+                            $paramBindingCall = $e->getMessage() . " [bindValue(" . $sParam . "," . $aValue . "," . $oType . ")]";
+                            $this->lastError = $paramBindingCall;
+                            $this->lastError .= " (" . $sql . " [" . $paramBindingCall . "])";
+                            $this->pdolaststmt = false;
+                            $res = false;
+                            return $res;
+                        }
                     }
                 }
             }
@@ -169,7 +181,9 @@ class CMySQLDB extends CDBConnection {
             $this->pdolaststmt = $res;
         } catch(PDOException $ex) {
             $this->lastError = $ex->getMessage();
+            $this->lastError .= " (" . $sql . " [" . $allParamBindingCalls . "])";
             $this->pdolaststmt = false;
+            $res = false;
         }
 
         return $res;

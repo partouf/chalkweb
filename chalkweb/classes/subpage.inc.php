@@ -129,7 +129,9 @@ class CSubPage extends CTemplate {
 	public function Process() {
 		global $globalCurrentUser;
 
-		$this->AssignCondition( "loggedin", ($globalCurrentUser != null) );
+        if (!isset($this->conditionVars['loggedin'])) {
+            $this->AssignCondition( "loggedin", ($globalCurrentUser != null) );
+        }
 
 		$this->AssignValue( "page_index", $this->currentPage );
 		$this->AssignValue( "page_count", $this->getPageCount() );
